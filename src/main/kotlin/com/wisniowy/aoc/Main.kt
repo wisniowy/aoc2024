@@ -1,3 +1,5 @@
+package com.wisniowy.aoc
+
 import com.wisniowy.aoc.utils.SolutionDayRunner
 
 fun main(args: Array<String>) {
