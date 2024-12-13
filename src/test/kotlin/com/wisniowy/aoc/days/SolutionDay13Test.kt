@@ -5,17 +5,17 @@ import org.junit.jupiter.api.Test
 
 import org.junit.jupiter.api.Assertions.*
 
-class SolutionDay9Test {
+class SolutionDay13Test {
 
-    private val solution: SolutionDay = SolutionDay9()
+    private val solution: SolutionDay = SolutionDay13()
 
     @Test
     fun partOne() {
-        assertEquals(1928L, solution.partOne())
+        assertEquals(480L, solution.partOne())
     }
 
     @Test
     fun partTwo() {
-        assertEquals(2858L, solution.partTwo())
+        assertEquals(875318608908L, solution.partTwo())
     }
 }

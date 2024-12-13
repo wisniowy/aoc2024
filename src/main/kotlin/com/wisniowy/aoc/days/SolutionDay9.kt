@@ -9,152 +9,73 @@ import com.wisniowy.aoc.utils.SolutionDay
  */
 class SolutionDay9 : SolutionDay(9) {
 
+    data class Space(var range: LongRange, val value: Long?)
+
     override fun partOne(): Any {
         val input = inputAsString(FileReader.InputPart.PART_ONE)
 
-        val numbers = mutableListOf<Char?>()
+        var fileIdx = 0L
+        val disk = mutableListOf<Long?>()
 
-        var fileCnt = 0
+        input.indices.forEach { idx ->
+            val spaceSize = input[idx].digitToInt()
 
-
-        val v = input.mapIndexed { index, c ->
-            when  {
-                index % 2 == 0 -> {
-                    val fileIdx = fileCnt++
-                    List(c.digitToInt()) { fileIdx }
-                }
-                else -> List(c.digitToInt()) { null }
+            if (idx % 2 == 0) {
+                repeat(spaceSize) { disk.add(fileIdx) }
+                fileIdx += 1
+            } else {
+                repeat(spaceSize) { disk.add(null) }
             }
-        }.flatMap { it }
-
-
-        var left = 0
-        var right = v.lastIndex
-
-        var result = 0L
-
-        while (left <= right) {
-            val currentValue = v[left]
-
-            when {
-                currentValue != null -> {
-                    result += (left.toLong() * currentValue)
-                    left += 1
-                }
-
-                else -> {
-                    var rightVal = v[right--]
-                    while (rightVal == null) {
-                        rightVal = v[right--]
-                    }
-
-                    result += (left.toLong() * rightVal)
-                    left += 1
-                }
-            }
-
-
-
         }
 
+        var emptyIdx = disk.indexOfFirst { it == null }
 
+        disk.indices.reversed().forEach { idx ->
+            if (disk[idx] == null) return@forEach
+            emptyIdx = (emptyIdx..<idx).firstOrNull { disk[it] == null } ?: return@forEach
+            disk[emptyIdx] = disk[idx]
+            disk[idx] = null
+        }
 
-        return result
+        return disk.zip(disk.indices)
+            .filter { it.first != null }
+            .sumOf { (it.first ?: 0) * it.second }
     }
-
-
-    data class Space(var start: Long, var size: Long, val value: Long?)
 
     override fun partTwo(): Any {
-        val input = inputAsString(FileReader.InputPart.PART_ONE)
+        val input = inputAsString(FileReader.InputPart.PART_TWO)
 
-//        val usedSpace = mutableListOf<Pair<Long, LongRange>>()
-//        val freeSpace = mutableListOf<LongRange>()
-//        var isFreeSpace = false
-//        var diskIndex = 0L
-//        var partIndex = 0L
-//        input.indices.map { inputIndex ->
-//            val partSize = input[inputIndex].digitToInt()
-//
-//            if(!isFreeSpace) {
-//                usedSpace.add(partIndex to (diskIndex until diskIndex + partSize))
-//                partIndex++
-//            } else {
-//                freeSpace.add(diskIndex until diskIndex + partSize)
-//            }
-//            diskIndex += partSize
-//
-//            isFreeSpace = !isFreeSpace
-//        }
-//        usedSpace.reversed().forEachIndexed { index, used ->
-//            val usedSize = used.second.count()
-//            val freeSpaceIndex = freeSpace.indexOfFirst { it.count() >= usedSize }
-//            if (freeSpaceIndex == -1) return@forEachIndexed
-//            if (freeSpaceIndex >= usedSpace.size - 1 - index) return@forEachIndexed
-//            val freeSpaceRemoved = freeSpace.removeAt(freeSpaceIndex)
-//            freeSpace.add(freeSpaceIndex, freeSpaceRemoved.first() + usedSize .. freeSpaceRemoved.last)
-//            usedSpace.removeAt(usedSpace.size - 1 - index)
-//            usedSpace.add(usedSpace.size - index, used.first to freeSpaceRemoved.first()..<freeSpaceRemoved.first() + usedSize)
-//        }
-//        return usedSpace.sumOf { used -> used.second.sumOf { it * used.first } }
-        var fileCnt = 0L
-        var currentIdx = 0L
+        var fileIdx = 0L
+        var diskIdx = 0L
 
+        val files = mutableListOf<Space>()
+        val freeSpaces = mutableListOf<Space>()
 
-        val v = input.mapIndexed { index, c ->
-            val idx = currentIdx
-            currentIdx += c.digitToInt().toLong()
-            when  {
-                index % 2 == 0 -> {
-                    Space(idx ,c.digitToInt().toLong(), fileCnt++)
-                }
-                else -> Space(idx, c.digitToInt().toLong(), null)
+        input.indices.forEach { idx ->
+            val spaceSize = input[idx].digitToInt()
+
+            if (idx % 2 == 0) {
+                files.add(Space((diskIdx until diskIdx + spaceSize), fileIdx))
+                fileIdx += 1
+            } else {
+                freeSpaces.add(Space((diskIdx until diskIdx + spaceSize), null))
             }
-        }.toMutableList()
 
-        val files = v.filter { it.value != null }
-        val emptySpaces = v.filter { it.value == null }
-
+            diskIdx += spaceSize
+        }
 
         files.reversed().forEach { file ->
+            val fileSize = file.range.count()
+            val firstFreeSpace = freeSpaces.indexOfFirst { it.range.count() >= fileSize }
 
-            for (emptySpace in emptySpaces) {
-                if (emptySpace.size < file.size) continue
+            if (firstFreeSpace < 0) return@forEach
 
-
-                val newStart = emptySpace.start
-                emptySpace.start += file.size
-                emptySpace.size -= file.size
-                file.start = newStart
-                break
-            }
+            val freeSpace = freeSpaces[firstFreeSpace]
+            if (freeSpace.range.first >= file.range.first) return@forEach
+            file.range = (freeSpace.range.first until freeSpace.range.first + fileSize)
+            freeSpace.range = (freeSpace.range.first + fileSize until freeSpace.range.first + freeSpace.range.count())
         }
 
-
-        val result = files.sumOf { file ->
-            (file.start..<(file.start + file.size)).sumOf { it.toLong() * (file.value ?: 0L).toLong() }
-        }
-
-//        var right = v.lastIndex
-//
-//        while (right >= 0) {
-//            val currentSpace = v[right]
-//            if (currentSpace.value == null) continue
-//
-//            var left = 0
-//
-//            while (left < right) {
-//                val newSpace = v[left]
-//                if (newSpace.value == null && newSpace.size >= currentSpace.size) {
-//
-//
-//                }
-//            }
-//
-//
-//        }
-
-        return result
+        return files.sumOf { file -> file.range.sumOf { it * file.value!! } }
     }
-
 }
